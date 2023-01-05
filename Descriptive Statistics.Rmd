@@ -1,0 +1,384 @@
+---
+title: "Analisis Descriptiu"
+author: "Sergi Marti"
+date: "2/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Conjunt de dades
+
+En aquest treball elaborarem els estudis a través de dos conjunt de dades principalment: el primer d'aquests, està composat per un grup de taules, les quals recullen informació diversa sobre accidents de trànsit a Melbourne, Australia. El segon d'aquests, recull informació sobre sensors ubicats en la mateixa ciutat.
+
+En aquesta part del treball, realitzarem un anàlisis descriptiu de les dades que disposem.
+
+## Resum de les dades
+
+Primerament, per treballar amb el conjunt de dades seleccionat, hem decidit un criteri per unir les dades d'orgien diferent. Per a unir ambdós conjunts, ens hem basat en la localització i el temps. Com a localització, hem escollit els accidents que han esdevingut en un radi d'1,5 km des de la ubicació dels sensors. Mentre que el període serà des del desembre de 2014, fins al juny del 2015.
+
+## Sensors Smart City
+
+Aquest conjunt de dades, recull informació mediambientals de Melbourne; des del desembre de 2014, fins el juny de 2015. Aquestes dades són captades des de 9 sensors diferents, ubicats en dues zones de la ciutat. Les variables que utitzarem sobre aquests sensors són les següents:
+
+```{r cars}
+str(sensors)
+summary(sensors)
+```
+- timestamp: data
+- mac: número id de cada sensor
+- temp_max: temperatura màxima
+- temp_min: temperatura mínima
+- temp_avg: temperatura mitjana
+- light_max: il·luminació màxima
+- light_min: il·liminació mínima
+- light_avg: il·luminació mitjana
+- humidity_max: humitat màxima
+- humidity_min: humitat mìnima
+- humidity_avg: humitat mitjana
+- latitude: latitud
+- longitude: longitud
+- location: Localització
+
+## Accidents
+
+Aquest conjunt de dades està compost per 9 taules diferents:
+
+- accident (Informació bàsica sobre els accidents, temps, severitat, localització, etc.)
+
+- person (Informació sobre les persones, edat, gènere, etc.)
+
+- vehicle (Dades dels vhícles, tipus, etc.)
+
+- accident_event (Seqüència de l'esdeveniment i.e. esquerra de la carretera, voltes de campana, si s'ha incendiat, etc.)
+
+- road_surface_cond (condicions de la carretera, gel, sec, mullat, etc.)
+
+- atmospheric_cond (condicions atmosfèriques, vent, pluja, etc.)
+
+- sub_dca (codis detallats que descriuen l'accident)
+
+- accident_node (Localització dels accidents)
+
+Principalment, la taula que utilitzarem serà la d'accident i accident_node amb informació bàsica sobre el succés.
+
+```{r cars}
+str(accidents)
+summary(accidents)
+
+str(node)
+summary(node)
+```
+En aquest cas, la variable més rellevant és l'aparició del mateix accident, que utilitzarem com a dada booleana sobre el conjunt de dades sobre els sensors mediambientals. Per tant les variables més importants en el nostre cas d'estudi serà la mateixa id de l'accident, la localització, la data, i l'hora d'aquest. Si amb les dades monitoritzades pels sensors no fos suficient per arribar a obtenir conclusions, les variables que sumariem a l'estudi serien el dia de la setmana, el nombre de persones, el tipus d'accident, el nombre de vehícles, el límit de velocitat i la severitat.
+
+- ACCIDENT_NO: id de l'accident.
+- ACCIDENTDATE: data de l'accident.
+- ACCIDENTTIME: hora de l'accident.
+- ACCIDENT_TYPE: tipus d'accident.
+- DAY_OF_WEEK: dia de la setmana.
+- SEVERITY: nivell de severitat de l'accident.
+- SPEED_ZONE: límit de velocitat.
+- NO_OF_VEHICLES: nombre de vehícles implicats.
+- NO_PERSONS: nombre de persones implicades.
+- Lat: Latitud
+- Long: Longitud
+
+
+## Estadístics
+
+En aquest apartat analitzarem informació característica dels nostres conjunts de dades. Aquest anàlisis ens permetrà entendre tant el conjunt de dades, com les pròpies característiques dels esdeveniments que estudiarem. Una vegada obtenim els resultats, aquests ens podran ajudar a decidir els models i paràmtres a aplicar.
+
+### Mediambient
+
+Començant per les dades mediambientals, obtenim informació sobre aspectes climatològics interessants. Més endavant, veurem si aquests poden ser útils en el nostre estudi.
+
+```{r mediambient}
+
+barplot(prop.table(table(sensors$location)),col=c("#e9c46a","#2a9d8f"),
+        legend.text=c("Docklands Library","Fitzroy Gardens"),ylim=c(0,0.8),main="Localització",
+        ylab ="Frecuenqüències Relatives",las=1)
+
+```
+Observem que els sensors es divideixen en dues localitzacions; Docklands Library i Fitzroy Gardens. Prop del 75% del registres dels sensors succeeixen en Docklands Library.
+
+```{r mediambient, warning= FALSE}
+
+sensors %>%
+  ggplot( aes(x=location, y=temp_avg, fill=location)) +
+    geom_boxplot() +
+    scale_fill_manual(values = c("#e9c46a","#2a9d8f")) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Temperatura mitjana per localització") +
+    xlab("")
+```
+
+
+
+Si comparem temperatures, notem que aquestes són lleugerament superiors a Fitzroy Gardens.
+
+```{r mediambient, warning= FALSE}
+
+sensors %>%
+  ggplot( aes(x=location, y=light_avg, fill=location)) +
+    geom_boxplot() +
+    scale_fill_manual(values = c("#e9c46a","#2a9d8f")) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Llum mitjana per localització") +
+    xlab("")
+
+```
+Si comparem els valors de llum, observem que sembla que hi ha asimetries oposades entre ambdues localitzacions. Per tant, encara que observem que la llum que hi ha ambdues localitzacions és molt semblant, la mediana ens indica que en la distribució d'ambdues localitzacions el valor mig de Docklands Library és molt menor al de Fitzroy Gardens.  Independentment de la diferències, aquesta asimetria no origina cap problema en l'estudi descriptiu, ja que la regressió logística que farem a posterior no requereix d'una distribució normal de les variables contínues independents. 
+
+```{r mediambient, warning= FALSE}
+
+sensors %>%
+  ggplot( aes(x=location, y=humidity_avg, fill=location)) +
+    geom_boxplot() +
+    scale_fill_manual(values = c("#e9c46a","#2a9d8f")) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Humitat mitjana per localització") +
+    xlab("")
+
+```
+Comparant la variable humitat entre ambdues localitzacions, observem que aquestes són lleugerament superiors a Docklands Library.
+
+```{r mediambient, warning= FALSE}
+
+sensors_measures %>%
+  ggplot( aes(x=my_date, y=temp_avg, group=location, color=location)) +
+    geom_line() +
+    scale_fill_manual(values = c("#e9c46a","#2a9d8f")) +
+    ggtitle("Temperatura mitjana per localització i mes") +
+    theme_ipsum() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust= 1)) +
+    ylab("Temperatura") +
+    xlab("Dies")
+
+sensors_measures %>%
+  ggplot( aes(x=my_date, y=light_avg, group=location, color=location)) +
+    geom_line() +
+    scale_fill_manual(values = c("#e9c46a","#2a9d8f")) +
+    ggtitle("Llum mitjana per localització i mes") +
+    theme_ipsum() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust= 1)) +
+    ylab("Llum") +
+    xlab("Dies")
+    
+sensors_measures %>%
+  ggplot( aes(x=my_date, y=humidity_avg, group=location, color=location)) +
+    geom_line() +
+    scale_fill_manual(values = c("#e9c46a","#2a9d8f")) +
+    ggtitle("Humitat mitjana per localització i mes") +
+    theme_ipsum() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust= 1)) +
+    ylab("Humitat") +
+    xlab("Dies")
+    
+
+```
+
+Si observem les series temporals, notem trencaments de series en les dades de Fitzroy Gardens; això és degut a en aquesta ubicació no és monitoritzen les dades de manera regular fins a finals d'abril. Pel que fa als resultats:
+
+- Es mantenen temperatures semblants entre ambdues ubicacions, sent els mesos de gener els més càlids i els juny els de més fred
+- La llum és on hi ha major diferència entre ambdues ubicacions, ja que a Docklands Library es gaudeix de major il·luminació artificial; per tant, la il·luminació de Fitzroy Gardens depen més de la il·luminació natural; és a dir; de l'hora del dia. Aquest fet explica la diferència entre medianes vista anteriorment.
+- Pel que fa la humitat, ambdues ubicacions semblen tenir dades semblants excepte entre els mesos de gener i febrer on les ubicacions semblen tenir màxims i mínims oposats.
+
+
+### Accidents
+
+Aquest conjunt de dades és molt extens i està format per diferents taules. Nosaltres principalment utiltizarem dues, i unes features molt concretes. Aquestes features les utilitzarem en cas que el conjunt de dades sobre la monitorització de dades mediambientals no sigui suficient robust per arribar els objectius descrits. L'objectiu principal d'aquest conjunt és l'aparició del propi esdeveniment.
+
+Per tant, en primer lloc seleccionarem aquelles features que poden resultar interessants pel nostre cas pràctic.
+
+```{r accidents, warning= TRUE}
+
+variables_to_describe <- c("ACCIDENT_NO", "ACCIDENTDATE", "ACCIDENTTIME", "ACCIDENT_TYPE", "Accident Type Desc",
+                           "DAY_OF_WEEK", "SEVERITY", "SPEED_ZONE", "NO_OF_VEHICLES",
+                           "NO_PERSONS")
+
+accidents_measures <- copy(accidents[,.SD,.SDcols = variables_to_describe])
+
+top_ubicacions <- node_original[,.N,LGA_NAME][order(-N)] %>% head(15)
+top_ubicacions[,N := as.numeric(N)]
+
+top_ubicacions %>%
+  ggplot( aes(x= reorder(LGA_NAME, N), y=N)) +
+    geom_segment( aes(xend=LGA_NAME, yend=0)) +
+    geom_point(size=4, color="#e9c46a") +
+    coord_flip() +
+    theme_bw() +
+    xlab("")
+
+
+```
+
+Observem que a Melbourne és on més esdeveniments ocorren; seguit de Casey i Geelong. En el nostre cas pràctic, tenint en compte on estan ubicats els sensors, els accidents que seleccionarem estaran principalment a la localització de Melbourne, pero també Yarra i Port Phillip
+
+```{r accidents, warning= TRUE}
+
+accidents_measures[,.N,`Accident Type Desc`][order(-N)] %>%
+  ggplot( aes(x= reorder(`Accident Type Desc`, N), y=N)) +
+    geom_segment( aes(xend=`Accident Type Desc`, yend=0)) +
+    geom_point(size=4, color="#2a9d8f") +
+    coord_flip() +
+    theme_bw() +
+    xlab("")
+
+
+```
+Observem que les col·lisions amb altres vehicles són els accidents més comuns, seguit de les col·lisions amb objectes fixes.
+
+
+```{r accidents, warning= TRUE}
+
+data_per_veh <- copy(accidents_measures[,.(as.numeric(`NO_PERSONS`),as.numeric(`NO_OF_VEHICLES`) )])
+var1 = data_per_veh$V1 
+var2 = data_per_veh$V2
+
+par(
+  mfrow=c(1,2),
+  mar=c(4,4,1,0)
+)
+
+hist(var1, breaks=60 , xlim=c(0,20) , col="#e9c46a" , xlab="" , ylab="Recompte" , main="" )
+hist(var2, breaks=60 , xlim=c(0,20) , col="#2a9d8f" , xlab="" , ylab="" , main="")
+
+# Add legend
+legend("topright", legend=c("Persones","Vehícles"), col=c("#e9c46a", 
+     "#2a9d8f"), pt.cex=2, pch=15 )
+```
+Notem que en la majoria de persones el major nombre de vehicles i persones acostuma a ser reduït; sent dues persones i dos vehicles el nombre més comú en els esdeveniments.
+
+```{r accidents, warning= TRUE}
+library(plyr)
+
+acc_day <- copy(accidents_measures[,.N, .(DAY_OF_WEEK,SEVERITY)][order(DAY_OF_WEEK)])
+
+day_week <- data.table::data.table(DAY = c("NULL", "Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres", "Dissabte", "Diumenge"),
+                                   id = 0:7)
+
+acc_day <- merge(day_week, acc_day, by.x = "id", by.y = "DAY_OF_WEEK" )
+
+# adding the
+acc_day = ddply(acc_day, .(DAY), transform,
+                   percentage=N/sum(N) * 100)
+  
+# adding the percentage label
+acc_day$prcntlabel = paste0(sprintf("%.0f",
+                                       acc_day$percentage),
+                               "%")
+
+acc_day %>%
+  filter(DAY != "NULL" & SEVERITY != 4 )  %>% 
+  mutate(name = fct_reorder(DAY , N )) %>%
+  ggplot( aes(fill = SEVERITY, x=DAY , y=N)) +
+  geom_bar(position = position_stack(), stat="identity", alpha=.6, width=.4) +
+  geom_text(aes(label = prcntlabel), position = position_stack(vjust = 0.5), size = 3) +
+  coord_flip() +
+  xlab("") +
+  theme_bw()
+
+```
+Notem que el dissabte i el divendres són els dies que més concentració d'accidents hi ha. A diferència del dilluns i diumenge que s'ubiquen a les posicions més baixes del ranking.
+
+
+## Unim els conjunts de dades en Espai-Temps
+
+### Espai
+
+En aquest punt, l'objectiu és el d'unir els diferents conjunts de dades, amb la finalitat d'obtenir el desitjat segons els models que aplicarem a futur. Per això, ens guiarem amb el primer conjunt de dades sobre els sensors, i amb el conjunt de dades "accident". En primer lloc,  filtrarem els accidents pel període de temps que disposem de dades monitoritzades pels sensors (des de 2014, fins a 2015). En segon lloc, transformarem les localitzacions d'ambdós conjunts com a característiques simples (Simple Features), la qual cosa ens permetrà, a través de la longitud i latitud, ubicar geogràficament cada punt en un pla de dues dimensions i d'aquesta manera, conèixer la distànica que hi ha de cada accident fins al sensor. Aquestes distàncies ens permetran seleccionar els accidents que han succeït a 1,5km de cada node. A més, a través d'aquest sistema, hem observat que es reforça la idea de dividir en dos grups geogràficament els nodes.
+
+En conclusió, una vegada aplicats els filtres, observem que disposem d'un total de 1955 nodes, dels quals 559 estan dins del radi d'1,5 km fins als sensors.
+
+```{r grups, echo=FALSE}
+mapa_mundo %>%      # Modificar per mapa de google
+  
+  ggplot() +
+  
+  geom_point(data = node_final,
+             aes(x = Long, y = Lat, size = 2, color = grup),
+             stroke = F) +
+  
+  geom_point(data = sensors,
+             aes(x = longitude, y = latitude, size = 2,  color = "sensors") ,
+             stroke = F) +
+  
+  scale_size_identity()
+
+```
+- En blau, tenim la ubicació dels sensors que monitoritzen els esdeveniments mediambientals.
+- En verd, el accidents de tràfic que estan dins del radi d'1.5 kim dels sensors de grup 1 (337 accidents).
+- En rosa, el accidents de tràfic que estan dins del radi d'1.5 kim dels sensors de grup 2 (222 accidents).
+
+
+### Temps
+
+Una vegada conegudes les ubicacions dels punts que estudiarem, els hem d'unir en temps. Per fer això, s'ha agafat un màxim de 4h de diferència entre la monitorització del sensor i el registre de l'accident. Aquest paràmetre de 4h. ha servit per filtrar i agafar com a referència un interval de +/- 4h, però una vegada feta la unió, s'ha observat que el màxim entre el temps de monitorització del sensor i el registre de l'accident no és major de 3,7 hores; mentre que el mínim és de 0 segons.
+
+Una vegada realitzada la unió en temps, amb l'interval de +/- 4h, el nombre final d'accidents és de 277 registres.
+
+
+## Quina variable influeix més que l'esdeveniment ocorri - Regressió Lógistica: Model Lineal Generalitzat (GLM)
+
+```{r glm, echo=FALSE}
+
+var_reg <- c("temp_avg", "light_avg", "humidity_avg", "accident")
+
+data_regresion <- copy(data_sensors_acc[,.SD, .SDcols = var_reg])
+
+set.seed(123)
+
+heatmap(cor(data_regresion[,.SD,.SDcols = c("temp_avg", "light_avg", "humidity_avg")]))
+
+model <- glm(accident ~ temp_avg + light_avg + humidity_avg, data = data_regresion, family = "binomial")
+
+summary(model)
+
+
+```
+En el resultat observem que light_avg és l'única variable significativa que ens explica part dels esdeveniments d'accidents (p-valor < nivell de significació). Cada unitat que disminueix de llum, s'espera que els accidents incrementin una mitjana de 0,0067. Per tant, tenen una relació negativa, molt lleugera, però significativa. 
+
+
+```{r grups, echo=FALSE}
+
+dark_roads <- node_final[!is.na(grup) & ACCIDENT_NO %in% accidents[LIGHT_CONDITION %in% c(6,5,4), unique(ACCIDENT_NO)]]
+
+map +      # Modificar per mapa de google
+  
+#  ggplot() +
+  
+  geom_point(data = node_final,
+             aes(x = Long, y = Lat, size = 2, color = grup),
+             stroke = F) +
+  
+  geom_point(data = sensors,
+             aes(x = longitude, y = latitude, size = 2,  color = "sensors") ,
+             stroke = F) +
+  
+  geom_point(data = dark_roads,
+           aes(x = Long, y = Lat     , size = 6),
+           color = "darkblue",
+           alpha = 0.25,
+           stroke = F) +
+  
+  
+  scale_size_identity()
+
+```
+Notem que els accidents que han ocorregut en zones amb baixa il·luminació. Notem que a l'Oest de la zona de Fitzroy Gardens (grup 1) hi ha tres indicadors de baixa il·luminació, amb una elevada concentració d'accidents en aquella zona. De cara a recomanacions urbanístiques, aquest podria ser un indicador clau a l'hora de decidir a quina zona s'ha d'augmentar la il·luminació.
+
+
