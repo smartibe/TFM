@@ -5,11 +5,16 @@ En aquest repositori es pot trobar el codi utilitzat per a l'anàlisis sobre ale
 L'estructura del repositori és la següent:
 
 ## SCRIPTS
+[Data Preparation_&_Analysis.R](https://github.com/smartibe/TFM/blob/main/Data%20Preparation_%26_Analysis.R)
+
+[Descriptive Statistics.Rmd](https://github.com/smartibe/TFM/blob/main/Descriptive%20Statistics.Rmd)
+
+[severity_analysis.ipynb](https://github.com/smartibe/TFM/blob/main/severity_analysis.ipynb)
 
 
 L'estructura del repositori és la següent:
 
-## :notebook: 01 - Data
+## :notebook: /01 - Data
 [ACCIDENT_ESDEVENIMENT.zip](https://github.com/smartibe/TFM/blob/main/01%20-%20Data/ACCIDENT_ESDEVENIMENT.zip)
 
 [ACCIDENT_NODE.zip](https://github.com/smartibe/TFM/blob/main/01%20-%20Data/ACCIDENT_NODE.zip)
